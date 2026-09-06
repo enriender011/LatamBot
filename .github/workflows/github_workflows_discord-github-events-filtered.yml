@@ -1,0 +1,133 @@
+name: Discord GitHub Events (Filtered)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, closed, ready_for_review]
+  pull_request_review:
+    types: [submitted]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, reopened, closed]
+  issue_comment:
+    types: [created]
+  discussion:
+    types: [created]
+  discussion_comment:
+    types: [created]
+  release:
+    types: [published]
+  repository_vulnerability_alert:
+    types: [create, resolve]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build message
+        id: msg
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          REF: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          DISC_TITLE: ${{ github.event.discussion.title }}
+          DISC_URL: ${{ github.event.discussion.html_url }}
+          REL_NAME: ${{ github.event.release.name }}
+          REL_TAG: ${{ github.event.release.tag_name }}
+          REL_URL: ${{ github.event.release.html_url }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          short_sha="$(echo "$SHA" | cut -c1-7)"
+          action="${ACTION:-updated}"
+
+          case "$EVENT" in
+            push)
+              msg="🚀 Push en $REPO ($REF) por $ACTOR
+          SHA: $short_sha
+          https://github.com/$REPO/commit/$SHA"
+              ;;
+            pull_request)
+              if [ "$action" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+                status="merged"
+              else
+                status="$action"
+              fi
+              msg="🔀 PR #$PR_NUM $status en $REPO por $ACTOR
+          $PR_TITLE
+          $PR_URL"
+              ;;
+            pull_request_review)
+              state="${{ github.event.review.state }}"
+              msg="✅ Review $state en PR #$PR_NUM por $ACTOR
+          $PR_TITLE
+          $PR_URL"
+              ;;
+            pull_request_review_comment)
+              msg="💬 Comentario de review en PR #$PR_NUM por $ACTOR
+          $PR_TITLE
+          ${COMMENT_URL:-$PR_URL}"
+              ;;
+            issues)
+              msg="🧩 Issue #$ISSUE_NUM $action en $REPO por $ACTOR
+          $ISSUE_TITLE
+          $ISSUE_URL"
+              ;;
+            issue_comment)
+              msg="💬 Comentario en issue/PR en $REPO por $ACTOR
+          ${ISSUE_TITLE:-Sin título}
+          ${COMMENT_URL:-$ISSUE_URL}"
+              ;;
+            discussion)
+              msg="🗣️ Discusión $action en $REPO por $ACTOR
+          $DISC_TITLE
+          $DISC_URL"
+              ;;
+            discussion_comment)
+              msg="💬 Comentario en discusión en $REPO por $ACTOR
+          ${DISC_TITLE:-Discusión}
+          $COMMENT_URL"
+              ;;
+            release)
+              msg="🏷️ Release publicada en $REPO por $ACTOR
+          ${REL_NAME:-Sin nombre} (${REL_TAG:-sin-tag})
+          $REL_URL"
+              ;;
+            repository_vulnerability_alert)
+              msg="🛡️ Alerta de vulnerabilidad ($action) en $REPO
+          Revisar alertas de seguridad del repositorio."
+              ;;
+            *)
+              msg="🔔 Evento $EVENT ($action) en $REPO por $ACTOR
+          Run: $RUN_URL"
+              ;;
+          esac
+
+          {
+            echo 'text<<EOF'
+            echo "$msg"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          CONTENT: ${{ steps.msg.outputs.text }}
+        run: |
+          jq -n --arg content "$CONTENT" '{content: $content}' \
+          | curl -sS -X POST \
+              -H "Content-Type: application/json" \
+              -d @- \
+              "$DISCORD_WEBHOOK"
