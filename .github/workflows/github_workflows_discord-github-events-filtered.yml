@@ -20,8 +20,6 @@ on:
     types: [created]
   release:
     types: [published]
-  repository_vulnerability_alert:
-    types: [create, resolve]
 
 jobs:
   notify:
@@ -104,10 +102,6 @@ jobs:
               msg="🏷️ Release publicada en $REPO por $ACTOR
           ${REL_NAME:-Sin nombre} (${REL_TAG:-sin-tag})
           $REL_URL"
-              ;;
-            repository_vulnerability_alert)
-              msg="🛡️ Alerta de vulnerabilidad ($action) en $REPO
-          Revisar alertas de seguridad del repositorio."
               ;;
             *)
               msg="🔔 Evento $EVENT ($action) en $REPO por $ACTOR
