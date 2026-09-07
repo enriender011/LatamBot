@@ -1,7 +1,8 @@
+#cosas muy importantes
 import os
 
 import discord
-from discord import app_commands
+from discord.ext import commands
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,25 +21,22 @@ GUILD = discord.Object(id=int(GUILD_ID))
 intents = discord.Intents.default()
 
 
-class Bot(discord.Client):
+class Bot(commands.Bot):
     def __init__(self):
-        super().__init__(intents=intents)
-        self.tree = app_commands.CommandTree(self)
+        super().__init__(command_prefix="!", intents=intents)
 
     async def setup_hook(self):
+        await self.load_extension("cogs.pruebas")
+        await self.load_extension("cogs.general")
+        await self.load_extension("cogs.moderacion")
+        await self.load_extension("cogs.utilidades")
+
         self.tree.copy_global_to(guild=GUILD)
         await self.tree.sync(guild=GUILD)
 
 
 bot = Bot()
 
-
-@bot.tree.command(
-    name="ping",
-    description="Comprueba si el bot está funcionando."
-)
-async def ping(interaction: discord.Interaction):
-    await interaction.response.send_message("Pong!")
 
 
 @bot.event
