@@ -6,7 +6,7 @@ __pycache__/
 *.py[cod]
 *.code-workspace
 
-# Test and build artifacts
+# Pruebas
 .pytest_cache/
 .coverage
 htmlcov/
@@ -14,7 +14,7 @@ build/
 dist/
 *.egg-info/
 
-# Local logs and OS files
+# cosas locales
 *.log
 .DS_Store
 Thumbs.db
