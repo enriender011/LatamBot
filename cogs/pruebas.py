@@ -15,6 +15,16 @@ class Pruebas(commands.Cog):
     async def prueba(self, interaction: discord.Interaction):
         await interaction.response.send_message("La prueba funciona. codigo 200")
 
+    @app_commands.command(
+        name="everyone",
+        description="Menciona a todos en este canal"
+    )
+    async def everyone(self, interaction: discord.Interaction):
+        await interaction.response.send_message(
+            "@everyone",
+            allowed_mentions=discord.AllowedMentions(everyone=True)
+        )
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Pruebas(bot))

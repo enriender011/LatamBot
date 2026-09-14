@@ -19,6 +19,7 @@ if GUILD_ID is None:
 GUILD = discord.Object(id=int(GUILD_ID))
 
 intents = discord.Intents.default()
+intents.message_content = True
 
 
 class Bot(commands.Bot):
@@ -30,6 +31,7 @@ class Bot(commands.Bot):
         await self.load_extension("cogs.general")
         await self.load_extension("cogs.moderacion")
         await self.load_extension("cogs.utilidades")
+        await self.load_extension("cogs.tickets")
 
         self.tree.copy_global_to(guild=GUILD)
         await self.tree.sync(guild=GUILD)
